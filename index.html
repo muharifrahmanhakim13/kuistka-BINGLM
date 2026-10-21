@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi TKA Bahasa Inggris</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            user-select: text;
+        }
+
+        /* Clickable word highlighting */
+        .clickable-word {
+            display: inline;
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(50, 102, 152, 0.4);
+            transition: all 0.15s ease;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
+
+        .clickable-word:hover {
+            background-color: rgba(50, 102, 152, 0.15);
+            border-bottom-color: #326698;
+            color: #1e3a8a;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Pusmendik Colors */
+        .bg-pusmendik { background-color: #326698; }
+        .text-pusmendik { color: #326698; }
+        .border-pusmendik { border-color: #326698; }
+
+        /* Font Size Scaling Classes */
+        .text-scale-sm { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+        .text-scale-md { font-size: 1rem !important; line-height: 1.5rem !important; }
+        .text-scale-lg { font-size: 1.125rem !important; line-height: 1.75rem !important; }
+
+        /* Tooltip animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .tooltip-animate {
+            animation: fadeIn 0.15s ease-out forwards;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-print-area, #certificate-print-area * {
+                visibility: visible;
+            }
+            #certificate-print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between overflow-x-hidden">
+
+    <!-- SPLASH SCREEN MODAL -->
+    <div id="splash-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-100 transform transition-all">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-sky-50 text-pusmendik mb-4 shadow-inner">
+                    <i data-lucide="book-open-check" class="w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900">Simulasi TKA Bahasa Inggris</h1>
+                <p class="text-sm text-slate-500 mt-1">Tes Kemampuan Akademik - Standar Pusmendik</p>
+            </div>
+
+            <form id="splash-form" class="space-y-4" onsubmit="startSimulation(event)">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nama Lengkap</label>
+                    <input type="text" id="student-name" required placeholder="Contoh: Budi Santoso" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition text-slate-800">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Kelas / Rombel</label>
+                    <input type="text" id="student-class" required placeholder="Contoh: XII MIPA 1" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none transition text-slate-800">
+                </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-pusmendik hover:bg-sky-800 text-white font-semibold py-3.5 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center space-x-2 group">
+                        <span>Mulai Simulasi</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </div>
+            </form>
+            <div class="mt-6 text-center text-xs text-slate-400">
+                Fitur Kamus Interaktif: Klik kata mana saja pada soal untuk terjemahan instan.
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN EXAM CONTAINER (Hidden initially) -->
+    <div id="exam-app" class="hidden flex-col min-h-screen">
+        
+        <!-- TOP HEADER PUSMENDIK STYLE -->
+        <header class="bg-pusmendik text-white shadow-md sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <!-- Left Info -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/10 p-2 rounded-lg">
+                        <i data-lucide="graduation-cap" class="w-6 h-6 text-sky-200"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm sm:text-base leading-tight" id="header-student-name">Nama Siswa</h2>
+                        <p class="text-xs text-sky-200" id="header-student-class">Kelas</p>
+                    </div>
+                </div>
+
+                <!-- Center: Timer & Navigator Button -->
+                <div class="flex items-center space-x-4">
+                    <div class="bg-sky-900/60 border border-sky-400/30 px-3 py-1.5 rounded-lg flex items-center space-x-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-sky-300 animate-pulse"></i>
+                        <span id="timer-display" class="font-mono font-bold text-lg text-white">01:00:00</span>
+                    </div>
+
+                    <button onclick="openNavigatorModal()" class="hidden sm:flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-sm font-medium transition">
+                        <i data-lucide="grid" class="w-4 h-4"></i>
+                        <span>Daftar Soal</span>
+                    </button>
+                </div>
+
+                <!-- Right Controls: Font Size Switcher & Vocab Button -->
+                <div class="flex items-center space-x-2">
+                    <div class="bg-sky-900/60 p-1 rounded-lg flex items-center space-x-1 border border-sky-400/30">
+                        <button onclick="changeFontSize('sm')" id="font-btn-sm" class="px-2 py-0.5 text-xs rounded hover:bg-white/20 font-medium">A-</button>
+                        <button onclick="changeFontSize('md')" id="font-btn-md" class="px-2 py-0.5 text-sm rounded bg-white/20 font-bold">A</button>
+                        <button onclick="changeFontSize('lg')" id="font-btn-lg" class="px-2 py-0.5 text-base rounded hover:bg-white/20 font-bold">A+</button>
+                    </div>
+
+                    <button id="vocab-drawer-btn" onclick="toggleVocabDrawer()" class="relative bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow flex items-center space-x-1.5">
+                        <i data-lucide="book-marked" class="w-4 h-4"></i>
+                        <span class="hidden md:inline">Kosa Kata</span>
+                        <span id="vocab-badge" class="ml-1 bg-white text-amber-600 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-inner">0</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- SUB HEADER QUESTION TITLE BAR -->
+        <div class="bg-white border-b border-slate-200 px-4 py-2.5 shadow-sm">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-pusmendik text-white text-xs font-bold px-2.5 py-1 rounded">SOAL NO</span>
+                    <span id="current-question-num" class="text-xl font-extrabold text-slate-800">1</span>
+                    <span class="text-slate-400 text-sm">/ 30</span>
+                </div>
+                <button onclick="openNavigatorModal()" class="sm:hidden flex items-center space-x-1 bg-slate-100 px-2.5 py-1 rounded text-xs font-medium text-slate-700">
+                    <i data-lucide="grid" class="w-3.5 h-3.5"></i>
+                    <span>Soal</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN QUESTION AREA (SPLIT SCREEN) -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            
+            <!-- LEFT PANEL: PASSAGE / CONTEXT -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6 lg:max-h-[calc(100vh-14rem)] lg:overflow-y-auto">
+                <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="file-text" class="w-4 h-4 text-pusmendik"></i> Teks Bacaan
+                    </span>
+                    <span class="text-xs text-slate-400 italic">Sorot kata untuk terjemahan</span>
+                </div>
+                <div id="passage-container" class="prose prose-slate max-w-none leading-relaxed text-slate-700 font-normal">
+                    <!-- Passage injected here -->
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: QUESTION & OPTIONS -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6 flex flex-col justify-between min-h-[400px]">
+                <div>
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i data-lucide="help-circle" class="w-4 h-4 text-pusmendik"></i> Pertanyaan
+                        </span>
+                    </div>
+
+                    <!-- Question Stem -->
+                    <div id="question-stem" class="text-slate-900 font-medium mb-6 leading-relaxed">
+                        <!-- Question stem injected here -->
+                    </div>
+
+                    <!-- Options -->
+                    <div id="options-container" class="space-y-3">
+                        <!-- Multiple choice options injected here -->
+                    </div>
+                </div>
+
+                <!-- NAVIGATION BUTTONS BOTTOM BAR -->
+                <div class="mt-8 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button id="btn-prev" onclick="prevQuestion()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition flex items-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        <span>Sebelumnya</span>
+                    </button>
+
+                    <button id="btn-doubt" onclick="toggleDoubt()" class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 font-medium rounded-lg transition flex items-center space-x-1.5">
+                        <input type="checkbox" id="checkbox-doubt" class="rounded text-amber-600 focus:ring-amber-500 pointer-events-none">
+                        <span>Ragu-ragu</span>
+                    </button>
+
+                    <button id="btn-next" onclick="nextQuestion()" class="px-5 py-2 bg-pusmendik hover:bg-sky-800 text-white font-medium rounded-lg transition flex items-center space-x-1.5 shadow">
+                        <span id="btn-next-text">Selanjutnya</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- VOCAB POST-TEST QUIZ CONTAINER (Hidden initially) -->
+    <div id="vocab-quiz-app" class="hidden min-h-screen bg-slate-100 p-4 sm:p-6 flex flex-col justify-center items-center">
+        <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl border border-slate-200 p-6 sm:p-8">
+            <div class="text-center mb-6">
+                <span class="inline-block p-3 bg-amber-100 text-amber-700 rounded-2xl mb-2">
+                    <i data-lucide="award" class="w-8 h-8"></i>
+                </span>
+                <h2 class="text-2xl font-bold text-slate-900">Kuis Kosa Kata Bahasa Inggris</h2>
+                <p class="text-sm text-slate-500 mt-1">Uji pemahaman kata yang Anda klik selama tes bacaan</p>
+            </div>
+
+            <div class="flex items-center justify-between bg-slate-50 p-3 rounded-lg mb-6 border border-slate-200 text-sm">
+                <span class="font-medium text-slate-600">Soal Kuis: <span id="quiz-current-index">1</span> / <span id="quiz-total-index">0</span></span>
+                <span class="font-semibold text-pusmendik" id="quiz-score-live">Skor: 0</span>
+            </div>
+
+            <div id="quiz-question-box" class="mb-6">
+                <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Apa arti kata berikut?</p>
+                <h3 id="quiz-word-target" class="text-3xl font-extrabold text-slate-800 tracking-wide text-center py-4 bg-sky-50 rounded-xl border border-sky-100">Word</h3>
+            </div>
+
+            <div id="quiz-options-box" class="space-y-3 mb-6">
+                <!-- Quiz options generated dynamically -->
+            </div>
+
+            <button id="quiz-next-btn" onclick="nextQuizQuestion()" disabled class="w-full py-3.5 bg-pusmendik hover:bg-sky-800 text-white font-semibold rounded-xl shadow opacity-50 cursor-not-allowed transition flex items-center justify-center space-x-2">
+                <span>Lanjut</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- CERTIFICATE DISPLAY CONTAINER (Hidden initially) -->
+    <div id="certificate-app" class="hidden min-h-screen bg-slate-200 p-4 sm:p-8 flex flex-col justify-center items-center">
+        <div id="certificate-print-area" class="max-w-3xl w-full bg-white rounded-2xl shadow-2xl border-8 border-pusmendik p-8 sm:p-12 text-center relative overflow-hidden my-auto">
+            
+            <!-- Decorative Corners -->
+            <div class="absolute top-0 left-0 w-16 h-16 border-t-8 border-l-8 border-amber-500"></div>
+            <div class="absolute top-0 right-0 w-16 h-16 border-t-8 border-r-8 border-amber-500"></div>
+            <div class="absolute bottom-0 left-0 w-16 h-16 border-b-8 border-l-8 border-amber-500"></div>
+            <div class="absolute bottom-0 right-0 w-16 h-16 border-b-8 border-r-8 border-amber-500"></div>
+
+            <div class="flex justify-center mb-3">
+                <i data-lucide="award" class="w-16 h-16 text-amber-500"></i>
+            </div>
+            
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-pusmendik tracking-wider uppercase mb-1">SERTIFIKAT HASIL SIMULASI</h1>
+            <p class="text-xs sm:text-sm text-slate-500 uppercase tracking-widest font-semibold mb-6">TES KEMAMPUAN AKADEMIK (TKA) BAHASA INGGRIS</p>
+            
+            <p class="text-sm text-slate-600">Diberikan kepada:</p>
+            <h2 id="cert-student-name" class="text-2xl sm:text-3xl font-bold text-slate-900 my-2 underline decoration-sky-500 underline-offset-8">NAMA SISWA</h2>
+            <p id="cert-student-class" class="text-md text-slate-600 mb-8 font-medium">Kelas: XII MIPA 1</p>
+
+            <div class="grid grid-cols-2 gap-4 max-w-lg mx-auto mb-8">
+                <div class="bg-sky-50 p-4 rounded-xl border border-sky-100">
+                    <span class="block text-xs font-semibold text-slate-500 uppercase">Nilai Tes TKA</span>
+                    <span id="cert-tka-score" class="text-3xl font-extrabold text-pusmendik">0 / 100</span>
+                </div>
+                <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                    <span class="block text-xs font-semibold text-slate-500 uppercase">Nilai Kuis Vocabulary</span>
+                    <span id="cert-vocab-score" class="text-3xl font-extrabold text-amber-600">0 / 100</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end text-left pt-6 border-t border-slate-200 text-xs text-slate-500">
+                <div>
+                    <p class="font-semibold text-slate-700">Tanggal Pelaksanaan:</p>
+                    <p id="cert-date">-</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-semibold text-slate-700">Penyelenggara:</p>
+                    <p class="font-bold text-pusmendik">Simulasi TKA Mandiri</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-6 flex flex-wrap justify-center gap-4 no-print">
+            <button onclick="window.print()" class="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl shadow-lg transition flex items-center space-x-2">
+                <i data-lucide="printer" class="w-5 h-5"></i>
+                <span>Cetak Sertifikat</span>
+            </button>
+            <button onclick="location.reload()" class="px-6 py-3 bg-pusmendik hover:bg-sky-800 text-white font-semibold rounded-xl shadow-lg transition flex items-center space-x-2">
+                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                <span>Ulangi Simulasi</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SUBTLE WORD HOVER TOOLTIP -->
+    <div id="hover-tooltip" class="fixed hidden z-50 pointer-events-none bg-slate-900/90 text-white text-[11px] px-2.5 py-1 rounded shadow-md tooltip-animate">
+        Klik untuk melihat arti
+    </div>
+
+    <!-- WORD POPUP TRANSLATION DIALOG -->
+    <div id="word-modal" class="fixed hidden z-50 bg-white border border-slate-200 rounded-xl shadow-2xl p-3.5 max-w-xs w-64 transform transition-all text-left">
+        <div class="flex items-start justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-pusmendik uppercase tracking-wider">Kosa Kata</span>
+                <h4 id="pop-english-word" class="text-lg font-extrabold text-slate-900 capitalize leading-tight">Word</h4>
+            </div>
+            <button onclick="closeWordModal()" class="text-slate-400 hover:text-slate-600 p-0.5">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div class="mt-2 pt-2 border-t border-slate-100">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase">Terjemahan</span>
+            <p id="pop-indonesian-trans" class="text-sm font-medium text-slate-700 capitalize mt-0.5">Arti Kata</p>
+        </div>
+    </div>
+
+    <!-- QUESTION NAVIGATOR MODAL GRID -->
+    <div id="navigator-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-100">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="grid" class="w-5 h-5 text-pusmendik"></i> Navigasi Soal
+                </h3>
+                <button onclick="closeNavigatorModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Legends -->
+            <div class="flex items-center justify-around text-xs text-slate-600 mb-4 pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 bg-sky-600 rounded"></span> Terjawab
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 bg-amber-400 rounded"></span> Ragu-ragu
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-3.5 h-3.5 bg-slate-200 rounded"></span> Belum
+                </div>
+            </div>
+
+            <div id="navigator-grid" class="grid grid-cols-5 sm:grid-cols-6 gap-2.5 max-h-72 overflow-y-auto p-1">
+                <!-- 30 Question Buttons Injected Here -->
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeNavigatorModal()" class="px-5 py-2 bg-pusmendik text-white rounded-lg font-medium text-sm hover:bg-sky-800 transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT VOCAB DRAWER SIDEBAR -->
+    <div id="vocab-drawer" class="fixed top-0 right-0 h-full w-80 sm:w-96 bg-white shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-slate-200">
+        <div class="p-4 bg-pusmendik text-white flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i data-lucide="book-marked" class="w-5 h-5 text-amber-300"></i>
+                <h3 class="font-bold text-base">Daftar Kosa Kata (A-Z)</h3>
+            </div>
+            <button onclick="toggleVocabDrawer()" class="text-white/80 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-3 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 flex justify-between items-center">
+            <span>Total Kata Tersimpan:</span>
+            <span id="drawer-vocab-count" class="font-bold text-pusmendik">0</span>
+        </div>
+
+        <div id="vocab-drawer-list" class="flex-1 overflow-y-auto p-4 divide-y divide-slate-100">
+            <!-- Saved Vocab Items Injected Here -->
+            <div id="vocab-empty-msg" class="text-center py-12 text-slate-400 text-sm">
+                <i data-lucide="book-open" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                Belum ada kosa kata yang diklik.<br>Klik kata apapun dalam soal untuk menyimpannya.
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        // ==================== 1. DATASET: 30 COMPLETE TKA QUESTIONS ====================
+        const questionsData = [
+            {
+                id: 1,
+                passage: "Artificial Intelligence (AI) is rapidly transforming modern healthcare. By analyzing vast amounts of medical data, AI algorithms can identify patterns that human doctors might overlook. Early detection of diseases like cancer or cardiovascular anomalies is now significantly improved due to machine learning models. Furthermore, AI helps streamline administrative workflows, allowing medical personnel to devote more time to patient care.",
+                question: "What is the primary benefit of AI in modern healthcare as mentioned in the text?",
+                options: [
+                    "It replaces human doctors entirely in surgical procedures.",
+                    "It identifies complex patterns in medical data to improve early disease detection.",
+                    "It eliminates the need for administrative staff in hospitals.",
+                    "It lowers the overall cost of medical education for students."
+                ],
+                answer: 1
+            },
+            {
+                id: 2,
+                passage: "Artificial Intelligence (AI) is rapidly transforming modern healthcare. By analyzing vast amounts of medical data, AI algorithms can identify patterns that human doctors might overlook. Early detection of diseases like cancer or cardiovascular anomalies is now significantly improved due to machine learning models. Furthermore, AI helps streamline administrative workflows, allowing medical personnel to devote more time to patient care.",
+                question: "The word 'streamline' in paragraph 1 is closest in meaning to...",
+                options: [
+                    "Complicate",
+                    "Simplify and improve",
+                    "Delay",
+                    "Ignore"
+                ],
+                answer: 1
+            },
+            {
+                id: 3,
+                passage: "Renewable energy sources, such as solar, wind, and hydroelectric power, offer a sustainable alternative to fossil fuels. Unlike coal and oil, which emit greenhouse gases that accelerate global warming, renewable resources produce minimal carbon emissions. Transitioning to clean energy is crucial for mitigating climate change and ensuring energy security for future generations.",
+                question: "Why are renewable energy sources considered superior to fossil fuels?",
+                options: [
+                    "They are cheaper to construct anywhere in the world.",
+                    "They produce minimal carbon emissions and reduce global warming.",
+                    "They do not require any technology or infrastructure to harness.",
+                    "They are completely unlimited and instantly available in high quantities everywhere."
+                ],
+                answer: 1
+            },
+            {
+                id: 4,
+                passage: "Renewable energy sources, such as solar, wind, and hydroelectric power, offer a sustainable alternative to fossil fuels. Unlike coal and oil, which emit greenhouse gases that accelerate global warming, renewable resources produce minimal carbon emissions. Transitioning to clean energy is crucial for mitigating climate change and ensuring energy security for future generations.",
+                question: "What does the word 'mitigating' most nearly mean in this context?",
+                options: [
+                    "Worsening",
+                    "Alleviating or reducing",
+                    "Creating",
+                    "Observing"
+                ],
+                answer: 1
+            },
+            {
+                id: 5,
+                passage: "Digital literacy extends beyond simply knowing how to operate a computer or smartphone. It encompasses the critical thinking skills needed to evaluate online information, discern reliable news from misinformation, and engage safely in digital communication. As false news spreads rapidly on social media, teaching digital literacy in schools has become indispensable.",
+                question: "According to the passage, digital literacy involves...",
+                options: [
+                    "Only the physical ability to repair electronic gadgets.",
+                    "Critical evaluation of online information and safe digital engagement.",
+                    "Memorizing code and programming languages.",
+                    "Avoiding all forms of social media completely."
+                ],
+                answer: 1
+            },
+            {
+                id: 6,
+                passage: "Digital literacy extends beyond simply knowing how to operate a computer or smartphone. It encompasses the critical thinking skills needed to evaluate online information, discern reliable news from misinformation, and engage safely in digital communication. As false news spreads rapidly on social media, teaching digital literacy in schools has become indispensable.",
+                question: "The word 'indispensable' is synonym with...",
+                options: [
+                    "Essential",
+                    "Optional",
+                    "Useless",
+                    "Temporary"
+                ],
+                answer: 0
+            },
+            {
+                id: 7,
+                passage: "Biodiversity loss poses a grave threat to ecosystem stability worldwide. Human activities such as deforestation, urban expansion, and pollution destroy natural habitats, driving numerous species toward extinction. When a species disappears, it disrupts the ecological food web, which can ultimately lead to soil degradation and water scarcity.",
+                question: "What is a direct consequence of habitat destruction mentioned in the text?",
+                options: [
+                    "An increase in wild species population.",
+                    "Extinction of species and disruption of food webs.",
+                    "Improvement of soil fertility naturally.",
+                    "Reduction in urban expansion speed."
+                ],
+                answer: 1
+            },
+            {
+                id: 8,
+                passage: "Biodiversity loss poses a grave threat to ecosystem stability worldwide. Human activities such as deforestation, urban expansion, and pollution destroy natural habitats, driving numerous species toward extinction. When a species disappears, it disrupts the ecological food web, which can ultimately lead to soil degradation and water scarcity.",
+                question: "What does 'scarcity' mean in the passage?",
+                options: [
+                    "Abundance",
+                    "Shortage or lack",
+                    "Purity",
+                    "Distribution"
+                ],
+                answer: 1
+            },
+            {
+                id: 9,
+                passage: "Remote work has reshaped traditional corporate culture. Employees now enjoy flexibility and eliminated commute times, boosting productivity for many. However, remote environments can also foster feelings of isolation and make it difficult to maintain a clear boundary between work and personal life.",
+                question: "Which dual aspect of remote work is discussed in the passage?",
+                options: [
+                    "High salaries versus low employment rates.",
+                    "Flexibility and efficiency versus isolation and blurred work-life boundaries.",
+                    "Better office amenities versus poor internet connectivity.",
+                    "Strict supervision versus increased free time."
+                ],
+                answer: 1
+            },
+            {
+                id: 10,
+                passage: "Remote work has reshaped traditional corporate culture. Employees now enjoy flexibility and eliminated commute times, boosting productivity for many. However, remote environments can also foster feelings of isolation and make it difficult to maintain a clear boundary between work and personal life.",
+                question: "The word 'foster' in the text can be best replaced by...",
+                options: [
+                    "Prevent",
+                    "Encourage or nurture",
+                    "Destroy",
+                    "Evaluate"
+                ],
+                answer: 1
+            },
+            {
+                id: 11,
+                passage: "Urban agriculture is gaining popularity in congested metropolitan areas. By utilizing rooftops, vacant lots, and vertical gardens, city dwellers can cultivate fresh produce locally. This initiative reduces transport emissions and enhances food security in urban centers.",
+                question: "How does urban agriculture help environmental sustainability?",
+                options: [
+                    "By replacing all suburban farms.",
+                    "By reducing transport emissions through local crop cultivation.",
+                    "By building taller skyscrapers for farming.",
+                    "By encouraging citizens to consume imported food."
+                ],
+                answer: 1
+            },
+            {
+                id: 12,
+                passage: "Urban agriculture is gaining popularity in congested metropolitan areas. By utilizing rooftops, vacant lots, and vertical gardens, city dwellers can cultivate fresh produce locally. This initiative reduces transport emissions and enhances food security in urban centers.",
+                question: "The antonym of 'congested' is...",
+                options: [
+                    "Crowded",
+                    "Uncrowded or spacious",
+                    "Polluted",
+                    "Busy"
+                ],
+                answer: 1
+            },
+            {
+                id: 13,
+                passage: "Coral reefs are often called the rainforests of the sea because of their rich biodiversity. However, ocean acidification and rising sea temperatures cause coral bleaching. When corals undergo severe stress, they expel the symbiotic algae living in their tissues, turning completely white and often dying.",
+                question: "Coral bleaching occurs primarily due to...",
+                options: [
+                    "Overpopulation of colorful ocean fish.",
+                    "Rising temperatures and ocean acidification causing algae expulsion.",
+                    "Excessive sunlight reaching deep waters.",
+                    "Lack of nutrients in tropical oceans."
+                ],
+                answer: 1
+            },
+            {
+                id: 14,
+                passage: "Coral reefs are often called the rainforests of the sea because of their rich biodiversity. However, ocean acidification and rising sea temperatures cause coral bleaching. When corals undergo severe stress, they expel the symbiotic algae living in their tissues, turning completely white and often dying.",
+                question: "The word 'expel' means...",
+                options: [
+                    "Absorb",
+                    "Drive out or eject",
+                    "Protect",
+                    "Nurture"
+                ],
+                answer: 1
+            },
+            {
+                id: 15,
+                passage: "Fast fashion has revolutionized the garment industry by making trendy clothes affordable. However, this model relies on cheap labor and rapid consumption, leading to immense environmental waste and exploitation. Millions of tons of discarded clothing end up in landfills annually.",
+                question: "What is a major criticism of the fast fashion industry?",
+                options: [
+                    "It produces high-quality clothing that lasts decades.",
+                    "It leads to severe environmental waste and worker exploitation.",
+                    "It increases clothing prices for average consumers.",
+                    "It discourages people from buying new garments."
+                ],
+                answer: 1
+            },
+            {
+                id: 16,
+                passage: "Fast fashion has revolutionized the garment industry by making trendy clothes affordable. However, this model relies on cheap labor and rapid consumption, leading to immense environmental waste and exploitation. Millions of tons of discarded clothing end up in landfills annually.",
+                question: "The word 'discarded' is closest in meaning to...",
+                options: [
+                    "Recycled",
+                    "Thrown away or unwanted",
+                    "Tailored",
+                    "Stored"
+                ],
+                answer: 1
+            },
+            {
+                id: 17,
+                passage: "Microplastics—tiny plastic particles measuring less than five millimeters—have invaded marine ecosystems globally. Ingested by small marine organisms, these toxic particles travel up the food chain, eventually posing health risks to human consumers.",
+                question: "How do microplastics endanger human health?",
+                options: [
+                    "By polluting drinking water pipes in cities only.",
+                    "By accumulating up the marine food chain into consumed seafood.",
+                    "By creating toxic air in coastal zones.",
+                    "By destroying coastal soil structures."
+                ],
+                answer: 1
+            },
+            {
+                id: 18,
+                passage: "Microplastics—tiny plastic particles measuring less than five millimeters—have invaded marine ecosystems globally. Ingested by small marine organisms, these toxic particles travel up the food chain, eventually posing health risks to human consumers.",
+                question: "The word 'ingested' means...",
+                options: [
+                    "Swallowed or consumed",
+                    "Excreted",
+                    "Manufactured",
+                    "Cleaned"
+                ],
+                answer: 0
+            },
+            {
+                id: 19,
+                passage: "Space exploration has driven technological innovation for decades. Inventions initially developed for space missions—such as water purification systems, scratch-resistant lenses, and satellite communications—are now everyday tools benefiting global society.",
+                question: "What is the main point of the passage?",
+                options: [
+                    "Space missions are too expensive to justify.",
+                    "Innovations from space exploration yield practical everyday benefits on Earth.",
+                    "Astronauts require advanced communication systems.",
+                    "Satellite technology is only used for military purposes."
+                ],
+                answer: 1
+            },
+            {
+                id: 20,
+                passage: "Space exploration has driven technological innovation for decades. Inventions initially developed for space missions—such as water purification systems, scratch-resistant lenses, and satellite communications—are now everyday tools benefiting global society.",
+                question: "The word 'purification' refers to...",
+                options: [
+                    "Contamination",
+                    "Cleansing or removing impurities",
+                    "Freezing",
+                    "Evaporation"
+                ],
+                answer: 1
+            },
+            {
+                id: 21,
+                passage: "The human microbiome consists of trillions of microorganisms residing inside our gut. Research indicates that a balanced gut microbiome plays a vital role in immune function, mental health, and digestive wellness.",
+                question: "Which body system is directly affected by the gut microbiome according to the text?",
+                options: [
+                    "Respiratory system",
+                    "Immune and digestive systems",
+                    "Skeletal structure",
+                    "Circulatory system"
+                ],
+                answer: 1
+            },
+            {
+                id: 22,
+                passage: "The human microbiome consists of trillions of microorganisms residing inside our gut. Research indicates that a balanced gut microbiome plays a vital role in immune function, mental health, and digestive wellness.",
+                question: "The word 'vital' is synonymous with...",
+                options: [
+                    "Minor",
+                    "Crucial and essential",
+                    "Irrelevant",
+                    "Harmful"
+                ],
+                answer: 1
+            },
+            {
+                id: 23,
+                passage: "Volcanic eruptions release huge amounts of ash and gases into the stratosphere. These particles can reflect incoming solar radiation, temporary cooling global surface temperatures in a phenomenon known as volcanic winter.",
+                question: "What causes the global cooling effect after a major volcanic eruption?",
+                options: [
+                    "Lava covering ocean waters.",
+                    "Ash and gas particles reflecting solar radiation.",
+                    "Strong winds created by volcanic heat.",
+                    "Heavy rain triggered by cloud formation."
+                ],
+                answer: 1
+            },
+            {
+                id: 24,
+                passage: "Volcanic eruptions release huge amounts of ash and gases into the stratosphere. These particles can reflect incoming solar radiation, temporary cooling global surface temperatures in a phenomenon known as volcanic winter.",
+                question: "The word 'phenomenon' means...",
+                options: [
+                    "An observable fact or event",
+                    "A myth",
+                    "A mistake",
+                    "A disaster"
+                ],
+                answer: 0
+            },
+            {
+                id: 25,
+                passage: "Financial literacy is an essential skill for young adults. Understanding budgeting, saving, and investing helps individuals avoid debt traps and build financial independence early in life.",
+                question: "Why is financial literacy essential for young adults?",
+                options: [
+                    "It guarantees high-income jobs immediately.",
+                    "It helps avoid debt and promotes financial independence.",
+                    "It enables them to open banks without identification.",
+                    "It eliminates the need to pay taxes."
+                ],
+                answer: 1
+            },
+            {
+                id: 26,
+                passage: "Financial literacy is an essential skill for young adults. Understanding budgeting, saving, and investing helps individuals avoid debt traps and build financial independence early in life.",
+                question: "The term 'debt' refers to...",
+                options: [
+                    "Money saved in an account",
+                    "Money owed to someone else",
+                    "Profit from investments",
+                    "Tax refunds"
+                ],
+                answer: 1
+            },
+            {
+                id: 27,
+                passage: "Autonomous vehicles rely on sensors, cameras, and artificial intelligence to navigate roads without human intervention. Proponents argue that self-driving cars could dramatically reduce traffic accidents caused by human error.",
+                question: "What is the main benefit claimed by proponents of autonomous vehicles?",
+                options: [
+                    "They do not require electricity or fuel.",
+                    "They can reduce traffic accidents caused by human error.",
+                    "They eliminate traffic congestion completely.",
+                    "They travel faster than conventional airplanes."
+                ],
+                answer: 1
+            },
+            {
+                id: 28,
+                passage: "Autonomous vehicles rely on sensors, cameras, and artificial intelligence to navigate roads without human intervention. Proponents argue that self-driving cars could dramatically reduce traffic accidents caused by human error.",
+                question: "The word 'proponents' is opposite in meaning to...",
+                options: [
+                    "Advocates",
+                    "Opponents or critics",
+                    "Engineers",
+                    "Drivers"
+                ],
+                answer: 1
+            },
+            {
+                id: 29,
+                passage: "Sustainable forestry practices focus on harvesting timber without causing long-term damage to ecosystems. Replanting trees and preserving biodiversity ensure that forest resources remain resilient and available for future generations.",
+                question: "How do sustainable forestry practices maintain forest ecosystems?",
+                options: [
+                    "By stopping all timber production permanently.",
+                    "By replanting trees and protecting biodiversity during harvesting.",
+                    "By clearing old forests to plant single crops.",
+                    "By importing foreign wood species."
+                ],
+                answer: 1
+            },
+            {
+                id: 30,
+                passage: "Sustainable forestry practices focus on harvesting timber without causing long-term damage to ecosystems. Replanting trees and preserving biodiversity ensure that forest resources remain resilient and available for future generations.",
+                question: "The word 'resilient' means...",
+                options: [
+                    "Fragile",
+                    "Able to recover quickly from difficult conditions",
+                    "Rigid",
+                    "Temporary"
+                ],
+                answer: 1
+            }
+        ];
+
+        // Comprehensive Dictionary for Translation Lookup
+        const dictionary = {
+            "artificial": "buatan / artifisial",
+            "intelligence": "kecerdasan",
+            "rapidly": "dengan cepat",
+            "transforming": "mengubah",
+            "modern": "modern",
+            "healthcare": "layanan kesehatan",
+            "analyzing": "menganalisis",
+            "vast": "sangat luas / besar",
+            "amounts": "jumlah",
+            "medical": "medis / kesehatan",
+            "data": "data",
+            "algorithms": "algoritma",
+            "identify": "mengidentifikasi / mengenali",
+            "patterns": "pola-pola",
+            "human": "manusia",
+            "doctors": "dokter",
+            "overlook": "melewatkan / mengabaikan",
+            "early": "dini / awal",
+            "detection": "deteksi / penemuan",
+            "diseases": "penyakit",
+            "cancer": "kanker",
+            "cardiovascular": "kardiovaskular / jantung",
+            "anomalies": "kelainan / anomali",
+            "significantly": "secara signifikan",
+            "improved": "ditingkatkan",
+            "machine": "mesin",
+            "learning": "pembelajaran",
+            "models": "model",
+            "furthermore": "selain itu",
+            "helps": "membantu",
+            "streamline": "menyederhanakan / mengefisienkan",
+            "administrative": "administrasi",
+            "workflows": "alur kerja",
+            "allowing": "memungkinkan",
+            "personnel": "personel / staf",
+            "devote": "mendedikasikan / mencurahkan",
+            "time": "waktu",
+            "patient": "pasien",
+            "care": "perawatan",
+            "primary": "utama",
+            "benefit": "manfaat",
+            "mentioned": "disebutkan",
+            "replaces": "menggantikan",
+            "entirely": "sepenuhnya",
+            "surgical": "bedah",
+            "procedures": "prosedur",
+            "identifies": "mengenali",
+            "complex": "rumit / kompleks",
+            "eliminates": "menghilangkan",
+            "need": "kebutuhan",
+            "staff": "staf",
+            "hospitals": "rumah sakit",
+            "lowers": "menurunkan",
+            "overall": "keseluruhan",
+            "cost": "biaya",
+            "education": "pendidikan",
+            "students": "siswa / mahasiswa",
+            "closest": "paling dekat",
+            "meaning": "arti / makna",
+            "complicate": "rumit",
+            "simplify": "menyederhanakan",
+            "delay": "menunda",
+            "ignore": "mengabaikan",
+            "renewable": "terbarukan",
+            "energy": "energi",
+            "sources": "sumber",
+            "solar": "surya / matahari",
+            "wind": "angin",
+            "hydroelectric": "pembangkit listrik tenaga air",
+            "power": "daya / energi",
+            "sustainable": "berkelanjutan",
+            "alternative": "alternatif",
+            "fossil": "fosil",
+            "fuels": "bahan bakar",
+            "unlike": "berbeda dengan",
+            "coal": "batu bara",
+            "oil": "minyak",
+            "emit": "memancarkan / mengeluarkan",
+            "greenhouse": "rumah kaca",
+            "gases": "gas",
+            "accelerate": "mempercepat",
+            "global": "global",
+            "warming": "pemanasan",
+            "resources": "sumber daya",
+            "produce": "menghasilkan",
+            "minimal": "minimal / sedikit",
+            "carbon": "karbon",
+            "emissions": "emisi",
+            "transitioning": "bertransisi / beralih",
+            "clean": "bersih",
+            "crucial": "sangat penting / krusial",
+            "mitigating": "meredakan / mengurangi",
+            "climate": "iklim",
+            "change": "perubahan",
+            "ensuring": "memastikan",
+            "security": "keamanan / ketahanan",
+            "future": "masa depan",
+            "generations": "generasi",
+            "considered": "dianggap",
+            "superior": "lebih unggul",
+            "cheaper": "lebih murah",
+            "construct": "membangun",
+            "reduce": "mengurangi",
+            "require": "membutuhkan",
+            "technology": "teknologi",
+            "infrastructure": "infrastruktur",
+            "harness": "memanfaatkan",
+            "unlimited": "tanpa batas",
+            "instantly": "seketika",
+            "available": "tersedia",
+            "quantities": "jumlah",
+            "context": "konteks",
+            "worsening": "memburuk",
+            "alleviating": "meredakan",
+            "reducing": "mengurangi",
+            "creating": "menciptakan",
+            "observing": "mengamati",
+            "digital": "digital",
+            "literacy": "literasi",
+            "extends": "meluas / melampaui",
+            "beyond": "di luar",
+            "simply": "hanya",
+            "knowing": "mengetahui",
+            "operate": "mengoperasikan",
+            "computer": "komputer",
+            "smartphone": "ponsel pintar",
+            "encompasses": "mencakup",
+            "critical": "kritis",
+            "thinking": "pemikiran",
+            "skills": "keterampilan",
+            "needed": "yang dibutuhkan",
+            "evaluate": "menevaluasi",
+            "online": "daring / online",
+            "information": "informasi",
+            "discern": "membedakan",
+            "reliable": "terpercaya",
+            "news": "berita",
+            "misinformation": "misinformasi / hoaks",
+            "engage": "terlibat",
+            "safely": "dengan aman",
+            "communication": "komunikasi",
+            "false": "palsu",
+            "spreads": "menyebar",
+            "social": "sosial",
+            "media": "media",
+            "teaching": "pengajaran",
+            "schools": "sekolah",
+            "indispensable": "sangat amat dibutuhkan / mutlak",
+            "involves": "melibatkan",
+            "physical": "fisik",
+            "ability": "kemampuan",
+            "repair": "memperbaiki",
+            "electronic": "elektronik",
+            "gadgets": "perangkat",
+            "evaluation": "evaluasi",
+            "engagement": "keterlibatan",
+            "memorizing": "menghafal",
+            "code": "kode",
+            "programming": "pemrograman",
+            "languages": "bahasa",
+            "avoiding": "menghindari",
+            "forms": "bentuk",
+            "completely": "sepenuhnya",
+            "synonym": "sinonim / persamaan kata",
+            "essential": "penting / esensial",
+            "optional": "opsional / pilihan",
+            "useless": "tidak berguna",
+            "temporary": "sementara",
+            "biodiversity": "keanekaragaman hayati",
+            "loss": "kerugian / kehilangan",
+            "poses": "menimbulkan / mengajukan",
+            "grave": "serius / berat",
+            "threat": "ancaman",
+            "ecosystem": "ekosistem",
+            "stability": "stabilitas",
+            "worldwide": "di seluruh dunia",
+            "activities": "aktivitas",
+            "deforestation": "penebangan hutan",
+            "urban": "perkotaan",
+            "expansion": "ekspansi / perluasan",
+            "pollution": "polusi / pencemaran",
+            "destroy": "merusak",
+            "natural": "alami",
+            "habitats": "habitat",
+            "driving": "mendorong",
+            "numerous": "banyak",
+            "species": "spesies",
+            "extinction": "kepunahan",
+            "disappears": "menghilang",
+            "disrupts": "mengganggu",
+            "ecological": "ekologis",
+            "food": "makanan",
+            "web": "jaring-jaring",
+            "ultimately": "pada akhirnya",
+            "lead": "memimpin / menyebabkan",
+            "soil": "tanah",
+            "degradation": "degradasi / penurunan kualitas",
+            "water": "air",
+            "scarcity": "kelangkaan / kekurangan",
+            "direct": "langsung",
+            "consequence": "konsekuensi / akibat",
+            "destruction": "kerusakan",
+            "increase": "peningkatan",
+            "wild": "liar",
+            "population": "populasi",
+            "fertility": "kesuburan",
+            "naturally": "secara alami",
+            "abundance": "kelimpahan",
+            "shortage": "kekurangan",
+            "lack": "ketidakadaan",
+            "purity": "kemurnian",
+            "distribution": "distribusi",
+            "remote": "jarak jauh",
+            "work": "pekerjaan",
+            "reshaped": "membentuk kembali",
+            "traditional": "tradisional",
+            "corporate": "korporasi / perusahaan",
+            "culture": "budaya",
+            "employees": "karyawan",
+            "enjoy": "menikmati",
+            "flexibility": "fleksibilitas",
+            "commute": "perjalanan kerja",
+            "boosting": "meningkatkan",
+            "productivity": "produktivitas",
+            "environments": "lingkungan",
+            "foster": "mendorong / memupuk",
+            "feelings": "perasaan",
+            "isolation": "isolasi / kesendirian",
+            "maintain": "menjaga",
+            "clear": "jelas",
+            "boundary": "batasan",
+            "personal": "pribadi",
+            "life": "kehidupan",
+            "dual": "ganda",
+            "aspect": "aspek",
+            "discussed": "dibahas",
+            "high": "tinggi",
+            "salaries": "gaji",
+            "versus": "melawan",
+            "employment": "lapangan kerja",
+            "rates": "tingkat",
+            "efficiency": "efisiensi",
+            "blurred": "kabur",
+            "amenities": "fasilitas",
+            "poor": "buruk",
+            "internet": "internet",
+            "connectivity": "konektivitas",
+            "strict": "ketat",
+            "supervision": "pengawasan",
+            "replaced": "digantikan",
+            "prevent": "mencegah",
+            "encourage": "mendorong",
+            "nurture": "memelihara",
+            "agriculture": "pertanian",
+            "gaining": "memperoleh",
+            "popularity": "popularitas",
+            "congested": "padat / sesak",
+            "metropolitan": "metropolitan",
+            "areas": "area",
+            "utilizing": "memanfaatkan",
+            "rooftops": "atap gedung",
+            "vacant": "kosong",
+            "lots": "lahan",
+            "vertical": "vertikal",
+            "gardens": "taman",
+            "city": "kota",
+            "dwellers": "penghuni",
+            "cultivate": "menanam / bercocok tanam",
+            "fresh": "segar",
+            "produce": "hasil bumi",
+            "locally": "secara lokal",
+            "initiative": "inisiatif",
+            "transport": "transportasi",
+            "enhances": "meningkatkan",
+            "centers": "pusat-pusat",
+            "environmental": "lingkungan",
+            "suburban": "pinggir kota",
+            "farms": "pertanian",
+            "crop": "tanaman",
+            "cultivation": "budidaya",
+            "taller": "lebih tinggi",
+            "skyscrapers": "gedung pencakar langit",
+            "encouraging": "mendorong",
+            "citizens": "warga",
+            "consume": "mengonsumsi",
+            "imported": "impor",
+            "antonym": "antonim / lawan kata",
+            "crowded": "ramai",
+            "uncrowded": "tidak padat",
+            "spacious": "luas",
+            "polluted": "terpolusi",
+            "busy": "sibuk",
+            "coral": "terumbu karang",
+            "reefs": "karang",
+            "rainforests": "hutan hujan",
+            "sea": "laut",
+            "rich": "kaya",
+            "ocean": "lautan",
+            "acidification": "pengasaman",
+            "rising": "meningkat",
+            "temperatures": "suhu",
+            "bleaching": "pemutihan",
+            "undergo": "mengalami",
+            "severe": "parah / berat",
+            "stress": "tekanan / stres",
+            "expel": "mengeluarkan / mengusir",
+            "symbiotic": "simbiotik",
+            "algae": "ganggang / alga",
+            "living": "hidup",
+            "tissues": "jaringan",
+            "turning": "menjadi",
+            "white": "putih",
+            "dying": "mati",
+            "occurs": "terjadi",
+            "expulsion": "pengeluaran",
+            "excessive": "berlebihan",
+            "sunlight": "sinar matahari",
+            "reaching": "mencapai",
+            "deep": "dalam",
+            "waters": "perairan",
+            "nutrients": "nutrisi",
+            "tropical": "tropis",
+            "absorb": "menyerap",
+            "eject": "mengeluarkan",
+            "protect": "melindungi",
+            "fast": "cepat",
+            "fashion": "mode / fesyen",
+            "revolutionized": "merevolusi",
+            "garment": "pakaian / garmen",
+            "industry": "industri",
+            "making": "membuat",
+            "trendy": "tren",
+            "clothes": "pakaian",
+            "affordable": "terjangkau",
+            "relies": "bergantung",
+            "cheap": "murah",
+            "labor": "tenaga kerja",
+            "rapid": "cepat",
+            "consumption": "konsumsi",
+            "immense": "sangat besar",
+            "waste": "sampah / limbah",
+            "exploitation": "eksploitasi",
+            "millions": "jutaan",
+            "tons": "ton",
+            "discarded": "dibuang",
+            "clothing": "pakaian",
+            "landfills": "tempat pembuangan akhir",
+            "annually": "setiap tahun",
+            "criticism": "kritik",
+            "lasts": "bertahan",
+            "decades": "dekade",
+            "average": "rata-rata",
+            "consumers": "konsumen",
+            "discourages": "mencegah",
+            "buying": "membeli",
+            "garments": "pakaian",
+            "recycled": "didaur ulang",
+            "tailored": "dijahit",
+            "stored": "disimpan",
+            "microplastics": "mikroplastik",
+            "tiny": "sangat kecil",
+            "plastic": "plastik",
+            "particles": "partikel",
+            "measuring": "berukuran",
+            "less": "kurang",
+            "millimeters": "milimeter",
+            "invaded": "invasi / menyerbu",
+            "marine": "laut",
+            "ecosystems": "ekosistem",
+            "ingested": "tertelan / dikonsumsi",
+            "small": "kecil",
+            "organisms": "organisme",
+            "toxic": "beracun",
+            "travel": "bepergian / berpindah",
+            "eventually": "pada akhirnya",
+            "risks": "risiko",
+            "endanger": "membahayakan",
+            "accumulating": "menumpuk / terakumulasi",
+            "seafood": "makanan laut",
+            "coastal": "pesisir",
+            "zones": "zona",
+            "structures": "struktur",
+            "swallowed": "ditelan",
+            "excreted": "dikeluarkan",
+            "manufactured": "diproduksi",
+            "cleaned": "dibersihkan",
+            "space": "luar angkasa",
+            "exploration": "eksplorasi",
+            "driven": "mendorong",
+            "technological": "teknologi",
+            "innovation": "inovasi",
+            "inventions": "penemuan",
+            "initially": "pada awalnya",
+            "developed": "dikembangkan",
+            "missions": "misi",
+            "purification": "pemurnian",
+            "systems": "sistem",
+            "scratch-resistant": "tahan gores",
+            "lenses": "lensa",
+            "satellite": "satelit",
+            "everyday": "sehari-hari",
+            "tools": "alat",
+            "benefiting": "benefiting / memberi manfaat",
+            "society": "masyarakat",
+            "expensive": "mahal",
+            "justify": "membenarkan",
+            "yield": "menghasilkan",
+            "practical": "praktis",
+            "benefits": "manfaat",
+            "earth": "bumi",
+            "astronauts": "astronot",
+            "military": "militer",
+            "purposes": "tujuan",
+            "refers": "merujuk",
+            "contamination": "kontaminasi",
+            "cleansing": "pembersihan",
+            "removing": "menghilangkan",
+            "impurities": "kotoran",
+            "freezing": "membeku",
+            "evaporation": "penguapan",
+            "microbiome": "mikrobioma",
+            "consists": "terdiri dari",
+            "trillions": "triliun",
+            "microorganisms": "mikroorganisme",
+            "residing": "tinggal",
+            "inside": "di dalam",
+            "gut": "usus",
+            "research": "penelitian",
+            "indicates": "menunjukkan",
+            "balanced": "seimbang",
+            "plays": "memainkan",
+            "role": "peran",
+            "immune": "imun / kekebalan",
+            "function": "fungsi",
+            "mental": "mental",
+            "health": "kesehatan",
+            "digestive": "pencernaan",
+            "wellness": "kesejahteraan",
+            "affected": "dampaknya / dipengaruhi",
+            "respiratory": "pernapasan",
+            "skeletal": "rangka",
+            "structure": "struktur",
+            "circulatory": "peredaran darah",
+            "harmful": "berbahaya",
+            "volcanic": "gunung berapi",
+            "eruptions": "erupsi / letusan",
+            "release": "melepaskan",
+            "huge": "sangat besar",
+            "ash": "abu",
+            "stratosphere": "stratosfer",
+            "reflect": "memantulkan",
+            "incoming": "yang masuk",
+            "radiation": "radiasi",
+            "cooling": "pendinginan",
+            "surface": "permukaan",
+            "phenomenon": "fenomena",
+            "known": "dikenal",
+            "winter": "musim dingin",
+            "effect": "efek / dampak",
+            "major": "besar",
+            "eruption": "letusan",
+            "lava": "lava",
+            "covering": "menutupi",
+            "strong": "kuat",
+            "winds": "angin",
+            "created": "diciptakan",
+            "heat": "panas",
+            "heavy": "lebat",
+            "rain": "hujan",
+            "triggered": "pemicu",
+            "cloud": "awan",
+            "formation": "pembentukan",
+            "observable": "dapat diamati",
+            "fact": "fakta",
+            "event": "peristiwa",
+            "myth": "mitos",
+            "mistake": "kesalahan",
+            "disaster": "bencana",
+            "financial": "keuangan",
+            "budgeting": "penganggaran",
+            "saving": "menabung",
+            "investing": "berinvestasi",
+            "individuals": "individu",
+            "avoid": "menghindari",
+            "debt": "utang",
+            "traps": "jebakan",
+            "build": "membangun",
+            "independence": "kemandirian",
+            "guarantees": "menjamin",
+            "jobs": "pekerjaan",
+            "immediately": "segera",
+            "promotes": "mendorong",
+            "enables": "memungkinkan",
+            "banks": "bank",
+            "without": "tanpa",
+            "identification": "identifikasi",
+            "taxes": "pajak",
+            "account": "rekening",
+            "owed": "diutangkan",
+            "someone": "seseorang",
+            "else": "lain",
+            "profit": "keuntungan",
+            "investments": "investasi",
+            "refunds": "pengembalian",
+            "autonomous": "otonom / mandiri",
+            "vehicles": "kendaraan",
+            "rely": "mengandalkan",
+            "sensors": "sensor",
+            "cameras": "kamera",
+            "navigate": "menavigasi",
+            "roads": "jalan",
+            "intervention": "intervensi / campur tangan",
+            "proponents": "pendukung",
+            "argue": "berargumen",
+            "self-driving": "kemudi otomatis",
+            "cars": "mobil",
+            "could": "bisa",
+            "dramatically": "secara drastis",
+            "accidents": "kecelakaan",
+            "caused": "disebabkan",
+            "error": "kesalahan",
+            "claimed": "diklaim",
+            "electricity": "listrik",
+            "conventional": "konvensional",
+            "airplanes": "pesawat terbang",
+            "advocates": "pendukung",
+            "opponents": "penentang / kritikus",
+            "critics": "kritikus",
+            "engineers": "insinyur",
+            "drivers": "pengemudi",
+            "forestry": "kehutanan",
+            "practices": "praktik",
+            "focus": "fokus",
+            "harvesting": "pemanenan",
+            "timber": "kayu",
+            "long-term": "jangka panjang",
+            "damage": "kerusakan",
+            "replanting": "penanaman kembali",
+            "trees": "pohon",
+            "preserving": "melestarikan",
+            "ensure": "memastikan",
+            "forest": "hutan",
+            "remain": "tetap",
+            "resilient": "tangguh / elastis",
+            "stopping": "menghentikan",
+            "permanently": "secara permanen",
+            "protecting": "melindungi",
+            "clearing": "membersihkan",
+            "single": "tunggal",
+            "crops": "tanaman",
+            "foreign": "asing",
+            "wood": "kayu",
+            "fragile": "rapuh",
+            "recover": "pulih",
+            "quickly": "cepat",
+            "difficult": "sulit",
+            "conditions": "kondisi",
+            "rigid": "kaku"
+        };
+
+        // Fallback translation helper for unlisted words
+        function getTranslation(word) {
+            const clean = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (dictionary[clean]) return dictionary[clean];
+            // Simple stem heuristic
+            if (clean.endsWith('ing') && dictionary[clean.slice(0, -3)]) return dictionary[clean.slice(0, -3)] + " (sedang dilakukan)";
+            if (clean.endsWith('ed') && dictionary[clean.slice(0, -2)]) return dictionary[clean.slice(0, -2)] + " (lampau)";
+            if (clean.endsWith('s') && dictionary[clean.slice(0, -1)]) return dictionary[clean.slice(0, -1)];
+            return "arti umum / konteks " + clean;
+        }
+
+        // Application State
+        let studentProfile = { name: '', class: '' };
+        let currentQuestionIndex = 0;
+        let userAnswers = new Array(30).fill(null);
+        let doubtStatus = new Array(30).fill(false);
+        let savedVocabMap = new Map(); // English word -> Indonesian translation
+        let timerInterval = null;
+        let timeRemainingSeconds = 3600; // 1 Hour
+        let hoverTimeout = null;
+
+        // Quiz State
+        let vocabQuizList = [];
+        let currentQuizIndex = 0;
+        let quizScore = 0;
+        let selectedQuizOption = null;
+
+        // Initialize Lucide Icons
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // ==================== 2. SPLASH SCREEN & START TEST ====================
+        function startSimulation(event) {
+            event.preventDefault();
+            const nameInput = document.getElementById('student-name').value.trim();
+            const classInput = document.getElementById('student-class').value.trim();
+
+            if (!nameInput || !classInput) return;
+
+            studentProfile.name = nameInput;
+            studentProfile.class = classInput;
+
+            document.getElementById('header-student-name').innerText = studentProfile.name;
+            document.getElementById('header-student-class').innerText = studentProfile.class;
+
+            document.getElementById('splash-modal').classList.add('hidden');
+            document.getElementById('exam-app').classList.remove('hidden');
+            document.getElementById('exam-app').classList.add('flex');
+
+            startTimer();
+            renderQuestion(0);
+        }
+
+        // ==================== 3. TIMER LOGIC ====================
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timeRemainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    finishTKATest();
+                    return;
+                }
+                timeRemainingSeconds--;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const h = Math.floor(timeRemainingSeconds / 3600);
+            const m = Math.floor((timeRemainingSeconds % 3600) / 60);
+            const s = timeRemainingSeconds % 60;
+            const formatted = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            document.getElementById('timer-display').innerText = formatted;
+        }
+
+        // ==================== 4. RECURSIVE DOM TEXT NODE WALKER ====================
+        function makeTextClickable(container) {
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+            const nodesToReplace = [];
+
+            while (walker.nextNode()) {
+                const node = walker.currentNode;
+                if (node.nodeValue.trim().length > 0 && node.parentNode.nodeName !== 'SCRIPT' && node.parentNode.nodeName !== 'STYLE') {
+                    nodesToReplace.push(node);
+                }
+            }
+
+            nodesToReplace.forEach(node => {
+                const text = node.nodeValue;
+                const fragment = document.createDocumentFragment();
+                // Tokenize words and non-words
+                const tokens = text.split(/([a-zA-Z0-9'-]+)/);
+
+                tokens.forEach(token => {
+                    if (/^[a-zA-Z0-9'-]+$/.test(token) && token.length > 1) {
+                        const span = document.createElement('span');
+                        span.className = 'clickable-word';
+                        span.textContent = token;
+                        
+                        // Hover tooltip listeners
+                        span.addEventListener('mouseenter', (e) => showHoverTooltip(e, span));
+                        span.addEventListener('mouseleave', hideHoverTooltip);
+                        
+                        // Click translation listener
+                        span.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            handleWordClick(token, span, e);
+                        });
+
+                        fragment.appendChild(span);
+                    } else {
+                        fragment.appendChild(document.createTextNode(token));
+                    }
+                });
+
+                node.parentNode.replaceChild(fragment, node);
+            });
+        }
+
+        // ==================== 5. HOVER TOOLTIP & WORD CLICK POPUP ====================
+        const tooltipEl = document.getElementById('hover-tooltip');
+        const modalEl = document.getElementById('word-modal');
+
+        function showHoverTooltip(e, span) {
+            tooltipEl.style.left = e.clientX + 10 + 'px';
+            tooltipEl.style.top = e.clientY + 15 + 'px';
+            tooltipEl.classList.remove('hidden');
+        }
+
+        function hideHoverTooltip() {
+            tooltipEl.classList.add('hidden');
+        }
+
+        function handleWordClick(word, spanElement, e) {
+            hideHoverTooltip();
+            const translation = getTranslation(word);
+
+            // Populate Modal
+            document.getElementById('pop-english-word').innerText = word;
+            document.getElementById('pop-indonesian-trans').innerText = translation;
+
+            // Position Modal near click
+            const rect = spanElement.getBoundingClientRect();
+            let top = rect.bottom + window.scrollY + 6;
+            let left = rect.left + window.scrollX;
+
+            // Boundary adjust
+            if (left + 260 > window.innerWidth) {
+                left = window.innerWidth - 270;
+            }
+
+            modalEl.style.top = `${top}px`;
+            modalEl.style.left = `${left}px`;
+            modalEl.classList.remove('hidden');
+
+            // Save to Drawer (A-Z)
+            saveWordToVocab(word, translation);
+        }
+
+        function closeWordModal() {
+            modalEl.classList.add('hidden');
+        }
+
+        // Auto Close Pop-up on Mouse Leave or Scroll
+        modalEl.addEventListener('mouseleave', () => {
+            closeWordModal();
+        });
+
+        window.addEventListener('scroll', () => {
+            closeWordModal();
+            hideHoverTooltip();
+        }, true);
+
+        document.addEventListener('click', (e) => {
+            if (!modalEl.contains(e.target) && !e.target.classList.contains('clickable-word')) {
+                closeWordModal();
+            }
+        });
+
+        // ==================== 6. VOCABULARY DRAWER (A-Z SORTED) ====================
+        function saveWordToVocab(word, translation) {
+            const cleanWord = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+            savedVocabMap.set(cleanWord, translation);
+            updateVocabDrawerUI();
+        }
+
+        function updateVocabDrawerUI() {
+            const count = savedVocabMap.size;
+            document.getElementById('vocab-badge').innerText = count;
+            document.getElementById('drawer-vocab-count').innerText = count;
+
+            const listContainer = document.getElementById('vocab-drawer-list');
+            
+            if (count === 0) {
+                listContainer.innerHTML = `
+                    <div id="vocab-empty-msg" class="text-center py-12 text-slate-400 text-sm">
+                        <i data-lucide="book-open" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+                        Belum ada kosa kata yang diklik.<br>Klik kata apapun dalam soal untuk menyimpannya.
+                    </div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            // Sort Alphabetically A-Z
+            const sortedKeys = Array.from(savedVocabMap.keys()).sort((a, b) => a.localeCompare(b));
+            
+            let html = '';
+            sortedKeys.forEach(key => {
+                html += `
+                    <div class="py-2.5 flex items-start justify-between group hover:bg-slate-50 px-2 rounded transition">
+                        <div>
+                            <span class="font-bold text-slate-800 text-sm block">${key}</span>
+                            <span class="text-xs text-slate-500 capitalize">${savedVocabMap.get(key)}</span>
+                        </div>
+                        <i data-lucide="check-circle2" class="w-4 h-4 text-emerald-500 opacity-60"></i>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function toggleVocabDrawer() {
+            const drawer = document.getElementById('vocab-drawer');
+            drawer.classList.toggle('translate-x-full');
+        }
+
+        // ==================== 7. QUESTION RENDERING & NAVIGATION ====================
+        function renderQuestion(index) {
+            currentQuestionIndex = index;
+            const q = questionsData[index];
+
+            document.getElementById('current-question-num').innerText = index + 1;
+
+            // Render Passage
+            const passageBox = document.getElementById('passage-container');
+            passageBox.innerHTML = `<p>${q.passage}</p>`;
+
+            // Render Question Stem
+            const stemBox = document.getElementById('question-stem');
+            stemBox.innerHTML = `<p>${q.question}</p>`;
+
+            // Render Options
+            const optionsBox = document.getElementById('options-container');
+            const labels = ['A', 'B', 'C', 'D'];
+            let optionsHtml = '';
+
+            q.options.forEach((opt, idx) => {
+                const isSelected = userAnswers[index] === idx;
+                const borderClass = isSelected ? 'border-pusmendik bg-sky-50/70 text-pusmendik font-semibold' : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700';
+                const badgeClass = isSelected ? 'bg-pusmendik text-white' : 'bg-slate-100 text-slate-600';
+
+                optionsHtml += `
+                    <div onclick="selectAnswer(${idx})" class="p-3.5 rounded-xl border ${borderClass} cursor-pointer transition flex items-start space-x-3 group">
+                        <span class="w-7 h-7 rounded-lg ${badgeClass} text-xs font-bold flex items-center justify-center shrink-0 transition">
+                            ${labels[idx]}
+                        </span>
+                        <div class="option-text text-sm pt-0.5 leading-snug">${opt}</div>
+                    </div>
+                `;
+            });
+
+            optionsBox.innerHTML = optionsHtml;
+
+            // Update Doubt Checkbox State
+            const doubtCheckbox = document.getElementById('checkbox-doubt');
+            doubtCheckbox.checked = doubtStatus[index];
+
+            // Wrap Text into Clickable Spans
+            makeTextClickable(passageBox);
+            makeTextClickable(stemBox);
+            const optionTexts = optionsBox.querySelectorAll('.option-text');
+            optionTexts.forEach(el => makeTextClickable(el));
+
+            // Update Prev/Next Buttons
+            document.getElementById('btn-prev').disabled = index === 0;
+            const nextText = index === questionsData.length - 1 ? 'Selesai & Kuis' : 'Selanjutnya';
+            document.getElementById('btn-next-text').innerText = nextText;
+
+            // Re-initialize Lucide Icons
+            lucide.createIcons();
+        }
+
+        function selectAnswer(optionIndex) {
+            userAnswers[currentQuestionIndex] = optionIndex;
+            renderQuestion(currentQuestionIndex);
+        }
+
+        function toggleDoubt() {
+            doubtStatus[currentQuestionIndex] = !doubtStatus[currentQuestionIndex];
+            document.getElementById('checkbox-doubt').checked = doubtStatus[currentQuestionIndex];
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                renderQuestion(currentQuestionIndex - 1);
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questionsData.length - 1) {
+                renderQuestion(currentQuestionIndex + 1);
+            } else {
+                // Last question reached -> Finish TKA
+                finishTKATest();
+            }
+        }
+
+        // ==================== 8. NAVIGATOR MODAL ====================
+        function openNavigatorModal() {
+            const grid = document.getElementById('navigator-grid');
+            let html = '';
+
+            for (let i = 0; i < questionsData.length; i++) {
+                const isAnswered = userAnswers[i] !== null;
+                const isDoubt = doubtStatus[i];
+                let bgClass = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+
+                if (isDoubt) {
+                    bgClass = 'bg-amber-400 text-slate-900 font-bold';
+                } else if (isAnswered) {
+                    bgClass = 'bg-pusmendik text-white font-bold';
+                }
+
+                const currentBorder = i === currentQuestionIndex ? 'ring-2 ring-offset-2 ring-sky-500' : '';
+
+                html += `
+                    <button onclick="jumpToQuestion(${i})" class="h-10 rounded-lg text-xs font-semibold ${bgClass} ${currentBorder} transition flex items-center justify-center">
+                        ${i + 1}
+                    </button>
+                `;
+            }
+
+            grid.innerHTML = html;
+            document.getElementById('navigator-modal').classList.remove('hidden');
+        }
+
+        function closeNavigatorModal() {
+            document.getElementById('navigator-modal').classList.add('hidden');
+        }
+
+        function jumpToQuestion(index) {
+            closeNavigatorModal();
+            renderQuestion(index);
+        }
+
+        // Font Size Adjuster
+        function changeFontSize(size) {
+            const passage = document.getElementById('passage-container');
+            passage.classList.remove('text-scale-sm', 'text-scale-md', 'text-scale-lg');
+            
+            document.getElementById('font-btn-sm').className = "px-2 py-0.5 text-xs rounded hover:bg-white/20 font-medium";
+            document.getElementById('font-btn-md').className = "px-2 py-0.5 text-sm rounded hover:bg-white/20 font-medium";
+            document.getElementById('font-btn-lg').className = "px-2 py-0.5 text-base rounded hover:bg-white/20 font-medium";
+
+            if (size === 'sm') {
+                passage.classList.add('text-scale-sm');
+                document.getElementById('font-btn-sm').classList.add('bg-white/20', 'font-bold');
+            } else if (size === 'lg') {
+                passage.classList.add('text-scale-lg');
+                document.getElementById('font-btn-lg').classList.add('bg-white/20', 'font-bold');
+            } else {
+                passage.classList.add('text-scale-md');
+                document.getElementById('font-btn-md').classList.add('bg-white/20', 'font-bold');
+            }
+        }
+
+        // ==================== 9. FINISH TKA & START VOCAB QUIZ ====================
+        let calculatedTKAScore = 0;
+
+        function finishTKATest() {
+            clearInterval(timerInterval);
+
+            // Calculate TKA Score
+            let correctCount = 0;
+            questionsData.forEach((q, idx) => {
+                if (userAnswers[idx] === q.answer) {
+                    correctCount++;
+                }
+            });
+            calculatedTKAScore = Math.round((correctCount / questionsData.length) * 100);
+
+            // Hide Exam App and Vocab Drawer Button
+            document.getElementById('exam-app').classList.add('hidden');
+            document.getElementById('vocab-drawer-btn').classList.add('hidden');
+            document.getElementById('vocab-drawer').classList.add('translate-x-full');
+
+            // Setup Vocab Quiz
+            setupVocabQuiz();
+        }
+
+        function setupVocabQuiz() {
+            // Prepare quiz items from savedVocabMap or fallback if empty
+            vocabQuizList = [];
+            savedVocabMap.forEach((trans, word) => {
+                vocabQuizList.push({ word, trans });
+            });
+
+            // If user clicked fewer than 5 words, add default important keywords from texts
+            const defaultWords = [
+                { word: "Artificial", trans: "Buatan / artifisial" },
+                { word: "Sustainable", trans: "Berkelanjutan" },
+                { word: "Indispensable", trans: "Sangat amat dibutuhkan / mutlak" },
+                { word: "Mitigating", trans: "Meredakan / mengurangi" },
+                { word: "Ecosystem", trans: "Ekosistem" }
+            ];
+
+            if (vocabQuizList.length < 5) {
+                defaultWords.forEach(dw => {
+                    if (!vocabQuizList.some(item => item.word.toLowerCase() === dw.word.toLowerCase())) {
+                        vocabQuizList.push(dw);
+                    }
+                });
+            }
+
+            currentQuizIndex = 0;
+            quizScore = 0;
+
+            document.getElementById('vocab-quiz-app').classList.remove('hidden');
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            if (currentQuizIndex >= vocabQuizList.length) {
+                showCertificate();
+                return;
+            }
+
+            const current = vocabQuizList[currentQuizIndex];
+            document.getElementById('quiz-current-index').innerText = currentQuizIndex + 1;
+            document.getElementById('quiz-total-index').innerText = vocabQuizList.length;
+            document.getElementById('quiz-word-target').innerText = current.word;
+            document.getElementById('quiz-score-live').innerText = `Skor: ${quizScore}`;
+
+            // Generate 4 clean options (1 correct + 3 distractors)
+            const allTranslations = Object.values(dictionary);
+            const distractors = new Set();
+            distractors.add(current.trans);
+
+            while (distractors.size < 4) {
+                const randomTrans = allTranslations[Math.floor(Math.random() * allTranslations.length)];
+                if (randomTrans !== current.trans) {
+                    distractors.add(randomTrans);
+                }
+            }
+
+            const optionsArray = Array.from(distractors).sort(() => Math.random() - 0.5);
+            selectedQuizOption = null;
+
+            const nextBtn = document.getElementById('quiz-next-btn');
+            nextBtn.disabled = true;
+            nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const optionsBox = document.getElementById('quiz-options-box');
+            let html = '';
+
+            optionsArray.forEach((opt, idx) => {
+                html += `
+                    <button onclick="selectQuizOption(this, '${opt}', '${current.trans}')" class="quiz-opt-btn w-full p-4 text-left rounded-xl border border-slate-200 hover:border-pusmendik hover:bg-sky-50 transition font-medium text-slate-800 flex items-center justify-between">
+                        <span class="capitalize">${opt}</span>
+                        <div class="status-icon"></div>
+                    </button>
+                `;
+            });
+
+            optionsBox.innerHTML = html;
+        }
+
+        function selectQuizOption(btnEl, chosenTrans, correctTrans) {
+            const allBtns = document.querySelectorAll('.quiz-opt-btn');
+            allBtns.forEach(b => {
+                b.disabled = true;
+                b.classList.remove('hover:border-pusmendik', 'hover:bg-sky-50');
+            });
+
+            if (chosenTrans === correctTrans) {
+                btnEl.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-800');
+                btnEl.querySelector('.status-icon').innerHTML = '<i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>';
+                quizScore += Math.round(100 / vocabQuizList.length);
+            } else {
+                btnEl.classList.add('bg-rose-50', 'border-rose-500', 'text-rose-800');
+                btnEl.querySelector('.status-icon').innerHTML = '<i data-lucide="x-circle" class="w-5 h-5 text-rose-600"></i>';
+
+                // Highlight correct one
+                allBtns.forEach(b => {
+                    if (b.innerText.toLowerCase().includes(correctTrans.toLowerCase())) {
+                        b.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-800');
+                    }
+                });
+            }
+
+            lucide.createIcons();
+
+            const nextBtn = document.getElementById('quiz-next-btn');
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function nextQuizQuestion() {
+            currentQuizIndex++;
+            renderQuizQuestion();
+        }
+
+        // ==================== 10. CERTIFICATE GENERATION ====================
+        function showCertificate() {
+            document.getElementById('vocab-quiz-app').classList.add('hidden');
+            document.getElementById('certificate-app').classList.remove('hidden');
+
+            document.getElementById('cert-student-name').innerText = studentProfile.name.toUpperCase();
+            document.getElementById('cert-student-class').innerText = `Kelas: ${studentProfile.class}`;
+            document.getElementById('cert-tka-score').innerText = `${calculatedTKAScore} / 100`;
+            
+            // Cap Vocab score at 100
+            const finalVocabScore = Math.min(100, quizScore);
+            document.getElementById('cert-vocab-score').innerText = `${finalVocabScore} / 100`;
+
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('cert-date').innerText = dateStr;
+
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
